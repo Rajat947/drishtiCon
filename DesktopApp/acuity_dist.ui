@@ -152,6 +152,9 @@ border: 1px solid gray;</string>
       <pointsize>14</pointsize>
      </font>
     </property>
+    <property name="cursor">
+     <cursorShape>PointingHandCursor</cursorShape>
+    </property>
     <property name="text">
      <string>Start</string>
     </property>
@@ -164,6 +167,9 @@ border: 1px solid gray;</string>
       <width>101</width>
       <height>51</height>
      </rect>
+    </property>
+    <property name="cursor">
+     <cursorShape>PointingHandCursor</cursorShape>
     </property>
     <property name="text">
      <string>Up</string>
@@ -206,6 +212,9 @@ border: 1px solid gray;</string>
       <height>101</height>
      </rect>
     </property>
+    <property name="cursor">
+     <cursorShape>PointingHandCursor</cursorShape>
+    </property>
     <property name="text">
      <string>Right</string>
     </property>
@@ -219,6 +228,9 @@ border: 1px solid gray;</string>
       <height>51</height>
      </rect>
     </property>
+    <property name="cursor">
+     <cursorShape>PointingHandCursor</cursorShape>
+    </property>
     <property name="text">
      <string>Down</string>
     </property>
@@ -231,6 +243,9 @@ border: 1px solid gray;</string>
       <width>51</width>
       <height>101</height>
      </rect>
+    </property>
+    <property name="cursor">
+     <cursorShape>PointingHandCursor</cursorShape>
     </property>
     <property name="text">
      <string>Left</string>

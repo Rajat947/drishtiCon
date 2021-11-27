@@ -60,6 +60,8 @@ class VideoThread(QThread):
     focal_length = 1076.92
     iris_diameter_cm = 1.17
 
+    is_camera_running = True
+
     def shape_to_np(self, shape, dtype='int'):
         # initialize the list of (x, y)-coordinates
         coords = np.zeros((68, 2), dtype=dtype)
@@ -76,12 +78,15 @@ class VideoThread(QThread):
         mask = cv2.fillConvexPoly(mask, points, 255)
         return mask
 
+    def stop(self):
+        self.is_camera_running = True
+
     def run(self):
         # capture from web cam
         cap = cv2.VideoCapture(0)
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, 260)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 180)
-        while True:
+        while self.is_camera_running:
             ret, img = cap.read()
             dist, ctr = 0, 0
             if ret:
@@ -192,9 +197,11 @@ class VisionTestThread(QThread):
 class VisionAcuity(QMainWindow):
     userSittingImproperly = 20
 
-    def __init__(self, dpX, dpY):
+    def __init__(self, dpX, dpY, widgets):
         super(VisionAcuity, self).__init__()
         loadUi('acuity_dist.ui', self)
+
+        self.widgets = widgets
 
         self.disply_width = 260
         self.display_height = 220
@@ -260,9 +267,65 @@ class VisionAcuity(QMainWindow):
 
     @pyqtSlot(list)
     def testOver(self, optotypes_read):
-        print(optotypes_read)
-        # self.video_thread.deleteLater()
         self.vision_test_thread.deleteLater()
+
+        resultsScreen = ResultsScreen(self.widgets, optotypes_read)
+        self.widgets.addWidget(resultsScreen)
+        self.widgets.setCurrentIndex(self.widgets.currentIndex() + 1)
+
+
+class ResultsScreen(QMainWindow):
+    MAR_values = [1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0]
+
+    def __init__(self, widgets, optotypes_read):
+        super(ResultsScreen, self).__init__()
+        loadUi('results.ui', self)
+
+        self.widgets = widgets
+        self.optotypes_read = optotypes_read
+        self.progressBar.setValue(optotypes_read[0])
+        self.progressBar_2.setValue(optotypes_read[1])
+        self.progressBar_3.setValue(optotypes_read[2])
+        self.progressBar_4.setValue(optotypes_read[3])
+        self.progressBar_5.setValue(optotypes_read[4])
+        self.progressBar_6.setValue(optotypes_read[5])
+        self.progressBar_7.setValue(optotypes_read[6])
+        self.progressBar_8.setValue(optotypes_read[7])
+        self.progressBar_9.setValue(optotypes_read[8])
+        self.progressBar_10.setValue(optotypes_read[9])
+        self.progressBar_11.setValue(optotypes_read[10])
+
+        MAR_score = self.calculateMAR()
+        self.mar_label.setText(str(MAR_score))
+
+        if MAR_score >= 0.4:
+            self.status.setText(
+                'Your eyesight is poor. You need to immediately consult a doctor.')
+            self.status.setStyleSheet('color: red;')
+        elif MAR_score >= 0.1:
+            self.status.setText(
+                'Your eyesight is weak. Do consult a doctor as soon as possible.')
+            self.status.setStyleSheet('color: orange;')
+        else:
+            self.status.setText(
+                'You have a perfect MAR score. Your eyes are healthy.')
+            self.status.setStyleSheet('color: green;')
+
+    def calculateMAR(self):
+        bestMAR, opt_missed = 0.0, 0
+        for i in range(len(self.optotypes_read)):
+            if self.optotypes_read[i] < 3:
+                bestMAR = self.MAR_values[i]
+                opt_missed = 5 - self.optotypes_read[i]
+                break
+
+        return round(bestMAR + 0.02 * opt_missed, 2)
+
+    def gotoMenu(self):
+        self.widgets.setCurrentIndex(1)
+
+    def startVisionAcuity(self):
+        self.widgets.setCurrentIndex(widgets.currentIndex() + 1)
 
 
 if __name__ == '__main__':
@@ -274,7 +337,7 @@ if __name__ == '__main__':
 
     homeScreen = HomeScreen(widgets)
     menuScreen = MenuScreen(widgets)
-    visionAcuityDist = VisionAcuity(dpX, dpY)
+    visionAcuityDist = VisionAcuity(dpX, dpY, widgets)
 
     widgets.addWidget(homeScreen)
     widgets.addWidget(menuScreen)
