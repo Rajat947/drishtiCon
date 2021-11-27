@@ -145,20 +145,26 @@ body{
     font-weight: 500;
     position: relative;
 }
-.OR::after, .OR::before{
+.lines::after, .lines::before{
     content: "";
     display: block;
     height: 4px;
     background: black;
-    bottom: 13px;
+    bottom: 140px;
     width: 190px;
     position: absolute;
 }
-.OR::after{
-    left: 47px;
+.lines::after{
+    left: 319px;
 }
-.OR::before{
-    right: 47px;
+.lines::before{
+    right: 319px;
+}
+#service::after{
+    left: 363px;
+}
+#service::before{
+    right: 363px;
 }
 .options{
     margin: 0px auto;
@@ -168,4 +174,13 @@ body{
 }
 #profile-icons{
     display: none;
+}
+.downloadBtn{
+    width: 22%;
+    text-align: center;
+    font-size: 20px;
+    margin: 0px auto;
+    font-weight: 600;
+    background-color: #7276ec;
+    color: white;
 }
