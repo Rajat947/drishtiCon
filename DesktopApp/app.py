@@ -1,12 +1,14 @@
 import sys
+from PyQt5 import QtCore
 import numpy as np
 import cv2
 import dlib
+import random
 
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QApplication, QMainWindow
 from PyQt5 import QtGui
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QPixmap, QTransform
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt, QThread
 
 from PyQt5.uic import loadUi
@@ -108,15 +110,96 @@ class VideoThread(QThread):
                 self.change_dist_signal.emit(int(dist))
 
 
+class VisionTestThread(QThread):
+    e_sizes = [1.4544, 1.16352, 0.916272, 0.7272,
+               0.5816, 0.4654, 0.3636, 0.2909, 0.2327, 0.1818, 0.14544]
+    optotypes_read = [0] * 11
+    log_mar = 1.0
+    ctr = 0
+    direction = random.randint(0, 3)
+    test_over_signal = pyqtSignal(list)
+
+    def __init__(self, label, dpX, dpY, pixmap, buttons):
+        super().__init__()
+        self.letter_label = label
+        self.dpX = dpX
+        self.dpY = dpY
+        self.pixmap = pixmap
+        self.buttons = buttons
+
+        self.buttons[3].clicked.connect(self.clickedUp)
+        self.buttons[0].clicked.connect(self.clickedRight)
+        self.buttons[1].clicked.connect(self.clickedDown)
+        self.buttons[2].clicked.connect(self.clickedLeft)
+
+    def run(self):
+        for i in range(len(self.buttons)):
+            self.buttons[i].setVisible(True)
+        self.display_letter()
+
+    def display_letter(self):
+        if self.ctr >= 55:
+            # Finished
+            self.test_over_signal.emit(self.optotypes_read)
+            return
+        new_dir = random.randint(0, 3)
+        while new_dir == self.direction:
+            new_dir = random.randint(0, 3)
+        self.direction = new_dir
+        sizeX, sizeY = round(
+            self.dpX * self.e_sizes[self.ctr // 5]), round(self.dpY * self.e_sizes[self.ctr // 5])
+        cur_pixmap = self.pixmap.scaled(
+            sizeX, sizeY, QtCore.Qt.KeepAspectRatio)
+        cur_pixmap = cur_pixmap.transformed(
+            QTransform().rotate(self.direction * 90), QtCore.Qt.SmoothTransformation)
+        self.letter_label.setPixmap(cur_pixmap)
+
+    def read_correct(self):
+        if self.ctr >= 55:
+            # Finished
+            return
+        self.optotypes_read[self.ctr // 5] += 1
+
+    def clickedUp(self):
+        if self.direction == 3:
+            # Correct
+            self.read_correct()
+        self.ctr += 1
+        self.display_letter()
+
+    def clickedRight(self):
+        if self.direction == 0:
+            # Correct
+            self.read_correct()
+        self.ctr += 1
+        self.display_letter()
+
+    def clickedDown(self):
+        if self.direction == 1:
+            # Correct
+            self.read_correct()
+        self.ctr += 1
+        self.display_letter()
+
+    def clickedLeft(self):
+        if self.direction == 2:
+            # Correct
+            self.read_correct()
+        self.ctr += 1
+        self.display_letter()
+
+
 class VisionAcuity(QMainWindow):
     userSittingImproperly = 20
 
-    def __init__(self):
+    def __init__(self, dpX, dpY):
         super(VisionAcuity, self).__init__()
         loadUi('acuity_dist.ui', self)
 
         self.disply_width = 260
         self.display_height = 220
+
+        self.dpcX, self.dpcY = dpX / 2.54, dpY / 2.54
 
         # create the video capture thread
         self.video_thread = VideoThread()
@@ -125,6 +208,27 @@ class VisionAcuity(QMainWindow):
         self.video_thread.change_dist_signal.connect(self.updateDistLabel)
         # start the thread
         self.video_thread.start()
+
+        # Set the E for reading
+        self.echart_label.setVisible(False)
+        self.pixmap = QPixmap('./assets/img/tumbling_e/1.png')
+        self.visionButtons = [self.btnRight,
+                              self.btnDown, self.btnLeft, self.btnUp]
+        for i in range(len(self.visionButtons)):
+            self.visionButtons[i].setVisible(False)
+        self.vision_test_thread = VisionTestThread(
+            self.echart_label, self.dpcX, self.dpcY, self.pixmap, self.visionButtons)
+
+        self.btnStart.clicked.connect(self.drawTumblingE)
+
+        self.vision_test_thread.test_over_signal.connect(self.testOver)
+
+    def drawTumblingE(self):
+        self.instruction_label1.setVisible(False)
+        self.instruction_label2.setVisible(False)
+        self.btnStart.setVisible(False)
+        self.echart_label.setVisible(True)
+        self.vision_test_thread.start()
 
     @pyqtSlot(int)
     def updateDistLabel(self, dist):
@@ -154,15 +258,23 @@ class VisionAcuity(QMainWindow):
             self.disply_width, self.display_height, Qt.KeepAspectRatio)
         return QPixmap.fromImage(p)
 
+    @pyqtSlot(list)
+    def testOver(self, optotypes_read):
+        print(optotypes_read)
+        # self.video_thread.deleteLater()
+        self.vision_test_thread.deleteLater()
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
+    screen = app.screens()[0]
+    dpX, dpY = screen.physicalDotsPerInchX(), screen.physicalDotsPerInchY()
 
     widgets = QtWidgets.QStackedWidget()
 
     homeScreen = HomeScreen(widgets)
     menuScreen = MenuScreen(widgets)
-    visionAcuityDist = VisionAcuity()
+    visionAcuityDist = VisionAcuity(dpX, dpY)
 
     widgets.addWidget(homeScreen)
     widgets.addWidget(menuScreen)
