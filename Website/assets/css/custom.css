@@ -162,9 +162,11 @@ body{
 }
 #service::after{
     left: 363px;
+    bottom: 165px;
 }
 #service::before{
     right: 363px;
+    bottom: 165px;
 }
 .options{
     margin: 0px auto;
@@ -183,4 +185,7 @@ body{
     font-weight: 600;
     background-color: #7276ec;
     color: white;
+}
+.size{
+    font-size: 13px;
 }
